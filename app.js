@@ -1,6 +1,6 @@
-const SUPABASE_URL = 'TU_SUPABASE_URL'
-const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY'
-const ALLOWED_EMAIL = 'EMAIL_DE_TU_HERMANO'
+const SUPABASE_URL = 'https://wtoismnhemzkxonlkibe.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0b2lzbW5oZW16a3hvbmxraWJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTE1ODEsImV4cCI6MjA5MzU4NzU4MX0.6MKRi9-M0j6Ysi5EKWSi3O7Vv_nc8Ng9yufwFyGexLs'
+const ALLOWED_EMAILS = ['britosjuanmanuel@gmail.com','britosignacio106@gmail.com']
 
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -8,7 +8,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 // ─── AUTH ───────────────────────────────────────────
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    if (session.user.email !== ALLOWED_EMAIL) {
+    if (!ALLOWED_EMAILS.includes(session.user.email)) {
       await sb.auth.signOut()
       document.getElementById('login-error').classList.remove('hidden')
       return
