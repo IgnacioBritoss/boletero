@@ -2,7 +2,6 @@
   "name": "el-boletero",
   "version": "1.0.0",
   "dependencies": {
-    "nodemailer": "^6.9.0",
     "@supabase/supabase-js": "^2.45.0"
   }
 }
