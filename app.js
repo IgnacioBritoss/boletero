@@ -149,12 +149,10 @@ async function initNuevaForm() {
   items = [{ descripcion: '', cantidad: 1, precio_unitario: 0 }]
   renderItems()
 
-  // Autocompletar clientes desde boletas anteriores
   const nombres = [...new Set(allBoletas.filter(b => b.cliente_nombre).map(b => b.cliente_nombre))]
   const dl = document.getElementById('clientes-list')
   dl.innerHTML = nombres.map(n => `<option value="${n}">`).join('')
 
-  // Autocompletar email cuando selecciona nombre
   document.getElementById('f-cliente-nombre').oninput = function() {
     const match = allBoletas.find(b => b.cliente_nombre === this.value)
     if (match) {
@@ -279,7 +277,6 @@ async function loadDetalle(id) {
   document.getElementById('d-numero').textContent = b.numero
   document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}">${badgeText(b.estado)}</span>`
 
-  // Acciones
   const actions = document.getElementById('detalle-actions')
   actions.innerHTML = ''
   if (b.estado === 'pendiente') {
@@ -288,8 +285,8 @@ async function loadDetalle(id) {
   if (b.cliente_email) {
     actions.innerHTML += `<button class="btn btn-secondary" onclick="enviarEmailBoleta('${b.id}','${b.cliente_email}').then(()=>toast('Email enviado'))">Enviar por email</button>`
   }
+  actions.innerHTML += `<button class="btn btn-ghost" style="color:var(--text3);margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Borrar boleta</button>`
 
-  // Cliente
   const cli = document.getElementById('d-cliente')
   if (b.cliente_nombre) {
     cli.innerHTML = `
@@ -301,7 +298,6 @@ async function loadDetalle(id) {
     cli.innerHTML = `<p style="color:var(--text3);font-size:14px">Sin cliente</p>`
   }
 
-  // Detalles
   document.getElementById('d-detalles').innerHTML = `
     <div class="info-row"><span class="info-label">Fecha</span><span class="info-value">${fmtFecha(b.fecha)}</span></div>
     <div class="info-row"><span class="info-label">Moneda</span><span class="info-value">${b.moneda || 'AUD'}</span></div>
@@ -309,7 +305,6 @@ async function loadDetalle(id) {
     ${b.cuotas > 1 ? `<div class="info-row"><span class="info-label">Por cuota</span><span class="info-value">${fmt(b.total / b.cuotas, b.moneda)}</span></div>` : ''}
   `
 
-  // Items
   document.getElementById('d-items').innerHTML = b.items_boleta?.map(i => `
     <tr>
       <td>${i.descripcion}</td>
@@ -319,14 +314,12 @@ async function loadDetalle(id) {
     </tr>
   `).join('') || ''
 
-  // Totales
   document.getElementById('d-totales').innerHTML = `
     <div class="total-row"><span>Subtotal</span><span>${fmt(b.subtotal, b.moneda)}</span></div>
     ${b.descuento > 0 ? `<div class="total-row"><span>Descuento</span><span>-${fmt(b.descuento, b.moneda)}</span></div>` : ''}
     <div class="total-row total-final"><span>Total</span><span>${fmt(b.total, b.moneda)}</span></div>
   `
 
-  // Notas
   const notasSec = document.getElementById('d-notas-sec')
   if (b.notas) {
     notasSec.style.display = ''
@@ -338,7 +331,7 @@ async function loadDetalle(id) {
 
 // ── PERFIL ─────────────────────────────────────────────
 async function loadPerfil() {
-  const { data } = await sb.from('perfil').select('*').single()
+  const { data } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (data) {
     document.getElementById('p-nombre').value = data.nombre || ''
     document.getElementById('p-email').value = data.email || ''
@@ -386,6 +379,45 @@ async function enviarEmailBoleta(boletaId, clienteEmail) {
   } catch {
     toast('Error al enviar el email', true)
   }
+}
+
+// ── BORRAR ─────────────────────────────────────────────
+function confirmarBorrar(id, numero) {
+  const backdrop = document.createElement('div')
+  backdrop.className = 'modal-backdrop'
+  backdrop.id = 'modal-borrar'
+  backdrop.innerHTML = `
+    <div class="modal">
+      <h3>Borrar boleta</h3>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:8px">
+        Estas a punto de borrar la boleta <strong>${numero}</strong>.
+      </p>
+      <p style="color:var(--red);font-size:13px;background:var(--red-bg);padding:10px 14px;border-radius:8px">
+        Esta accion no se puede deshacer.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="borrarBoleta('${id}')">Borrar definitivamente</button>
+      </div>
+    </div>
+  `
+  backdrop.onclick = e => { if (e.target === backdrop) cerrarModal() }
+  document.body.appendChild(backdrop)
+}
+
+function cerrarModal() {
+  const m = document.getElementById('modal-borrar')
+  if (m) m.remove()
+}
+
+async function borrarBoleta(id) {
+  await sb.from('items_boleta').delete().eq('boleta_id', id)
+  await sb.from('boletas').delete().eq('id', id)
+  cerrarModal()
+  toast('Boleta borrada')
+  allBoletas = allBoletas.filter(b => b.id !== id)
+  renderBoletas(allBoletas)
+  showDashboard()
 }
 
 // ── UTILS ──────────────────────────────────────────────
