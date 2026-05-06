@@ -230,8 +230,17 @@ async function loadDetalle(id) {
   if (b.cliente_email) {
     actions.innerHTML += `<button class="btn btn-secondary" onclick="enviarEmailBoleta('${b.id}','${b.cliente_email}').then(()=>toast('Email enviado'))">Enviar por email</button>`
   }
-  actions.innerHTML += `<button class="btn btn-ghost" style="color:var(--text3);margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Borrar boleta</button>`
-
+actions.innerHTML += `
+  <button class="btn btn-share" onclick="compartirPDF('${b.id}')">
+    Compartir PDF
+  </button>
+`
+if (b.cliente_tel) {
+  const texto = encodeURIComponent(`Hola ${b.cliente_nombre || ''}! Te mando la boleta ${b.numero} por ${fmt(b.total, b.moneda || 'AUD')}. Cualquier consulta avisame.`)
+  const tel = b.cliente_tel.replace(/\D/g, '')
+  actions.innerHTML += `<a href="https://wa.me/${tel}?text=${texto}" target="_blank" class="btn" style="background:#25d366;color:white">WhatsApp</a>`
+}
+actions.innerHTML += `<button class="btn btn-ghost" style="color:var(--text3);margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Borrar</button>`
   const cli = document.getElementById('d-cliente')
   if (b.cliente_nombre) {
     cli.innerHTML = `
