@@ -48,18 +48,22 @@
         <span class="header-title">El Boletero</span>
       </div>
       <div class="header-nav">
-        <button class="btn btn-primary" onclick="showNueva()">+ Nueva boleta</button>
-        <button class="btn btn-ghost" onclick="showPerfil()" title="Mi perfil">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="btn btn-primary" onclick="showNueva()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nueva boleta
+        </button>
+        <button class="btn btn-ghost icon-btn" onclick="showPerfil()" title="Mi perfil">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
-          <span style="display:none" class="show-md">Perfil</span>
         </button>
-        <button class="btn btn-ghost" id="btn-theme" onclick="toggleTheme()" title="Modo oscuro">
-          <svg id="icon-moon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="btn btn-ghost icon-btn" onclick="toggleTheme()" title="Cambiar tema">
+          <svg id="icon-moon" width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
           </svg>
-          <svg id="icon-sun" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="hidden">
+          <svg id="icon-sun" width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="hidden">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
           </svg>
         </button>
@@ -93,15 +97,16 @@
       <div class="card">
         <div class="card-header">
           <h2>Boletas</h2>
-          <div style="display:flex;gap:8px;align-items:center">
-            <select id="filtro-estado" onchange="filterBoletas()" style="width:auto;padding:5px 10px;font-size:13px">
-              <option value="">Todas</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="cobrada">Cobradas</option>
-            </select>
-          </div>
+          <select id="filtro-estado" onchange="filterBoletas()">
+            <option value="">Todas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="cobrada">Cobradas</option>
+          </select>
         </div>
         <div id="boletas-empty" class="empty-state hidden">
+          <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text3);margin-bottom:12px">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
           <p>Todavia no tenes boletas</p>
           <button class="btn btn-primary" onclick="showNueva()">Crear la primera</button>
         </div>
@@ -127,39 +132,42 @@
   <!-- NUEVA BOLETA -->
   <div id="view-nueva" class="hidden">
     <div class="container narrow">
-      <div class="back-row">
-        <button class="btn-back" onclick="showDashboard()">← Volver</button>
+      <div class="page-header">
+        <button class="btn-back" onclick="showDashboard()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Volver
+        </button>
         <h2>Nueva boleta</h2>
       </div>
 
       <div class="card">
         <div class="card-section">
-          <h3>Datos generales</h3>
+          <div class="section-title">Cliente</div>
           <div class="form-grid">
-            <div class="form-group" style="grid-column:1/-1">
-              <label>Cliente</label>
+            <div class="form-group full">
+              <label>Nombre</label>
               <input type="text" id="f-cliente-nombre" placeholder="Nombre del cliente..." list="clientes-list" autocomplete="off">
               <datalist id="clientes-list"></datalist>
             </div>
             <div class="form-group">
-              <label>Email del cliente</label>
+              <label>Email</label>
               <input type="email" id="f-cliente-email" placeholder="cliente@email.com">
             </div>
             <div class="form-group">
               <label>Telefono</label>
               <input type="text" id="f-cliente-tel" placeholder="+61 ...">
             </div>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <div class="section-title">Boleta</div>
+          <div class="form-grid">
             <div class="form-group">
               <label>Fecha</label>
               <input type="date" id="f-fecha">
-            </div>
-            <div class="form-group">
-              <label>Cuotas</label>
-              <input type="number" id="f-cuotas" value="1" min="1">
-            </div>
-            <div class="form-group">
-              <label>Descuento ($)</label>
-              <input type="number" id="f-descuento" value="0" min="0">
             </div>
             <div class="form-group">
               <label>Moneda</label>
@@ -169,11 +177,19 @@
                 <option value="ARS">ARS - Peso argentino</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>Cuotas</label>
+              <input type="number" id="f-cuotas" value="1" min="1">
+            </div>
+            <div class="form-group">
+              <label>Descuento ($)</label>
+              <input type="number" id="f-descuento" value="0" min="0">
+            </div>
           </div>
         </div>
 
         <div class="card-section">
-          <h3>Detalle del trabajo</h3>
+          <div class="section-title">Detalle del trabajo</div>
           <div id="items-header" class="item-header">
             <span>Descripcion</span><span>Cant.</span><span>Precio unit.</span><span></span>
           </div>
@@ -188,21 +204,21 @@
         </div>
 
         <div class="card-section">
-          <h3>Notas</h3>
+          <div class="section-title">Notas</div>
           <textarea id="f-notas" rows="3" placeholder="Condiciones de pago, detalles adicionales..."></textarea>
         </div>
 
         <div class="card-section" style="border-bottom:none">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
-            <input type="checkbox" id="f-enviar-email" style="width:auto">
-            Enviar boleta por email al cliente al crear
+          <label class="checkbox-label">
+            <input type="checkbox" id="f-enviar-email">
+            <span>Enviar boleta por email al crear</span>
           </label>
         </div>
       </div>
 
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="crearBoleta()">Crear boleta</button>
-        <button class="btn btn-secondary" onclick="showDashboard()">Cancelar</button>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" onclick="crearBoleta()">Crear boleta</button>
+        <button class="btn btn-secondary btn-lg" onclick="showDashboard()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -210,31 +226,37 @@
   <!-- DETALLE BOLETA -->
   <div id="view-detalle" class="hidden">
     <div class="container narrow">
-      <div class="back-row">
-        <button class="btn-back" onclick="showDashboard()">← Volver</button>
-        <div class="detalle-top">
+      <div class="page-header">
+        <button class="btn-back" onclick="showDashboard()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Volver
+        </button>
+        <div style="display:flex;align-items:center;gap:10px">
           <span class="boleta-num" id="d-numero"></span>
           <span id="d-badge"></span>
         </div>
       </div>
 
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="detalle-actions"></div>
+      <div class="action-bar" id="detalle-actions"></div>
 
       <div class="card">
         <div class="card-section">
-          <div class="detalle-info-grid">
+          <div class="detalle-grid">
             <div>
-              <h3>Cliente</h3>
+              <div class="section-title">Cliente</div>
               <div id="d-cliente"></div>
             </div>
             <div>
-              <h3>Detalles</h3>
+              <div class="section-title">Detalles</div>
               <div id="d-detalles"></div>
             </div>
           </div>
         </div>
+
         <div class="card-section">
-          <h3>Items</h3>
+          <div class="section-title">Items</div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -250,9 +272,10 @@
           </div>
           <div class="totales" id="d-totales"></div>
         </div>
+
         <div class="card-section" id="d-notas-sec" style="display:none;border-bottom:none">
-          <h3>Notas</h3>
-          <p id="d-notas" style="font-size:14px;color:var(--text2);white-space:pre-wrap"></p>
+          <div class="section-title">Notas</div>
+          <p id="d-notas" style="font-size:14px;color:var(--text2);white-space:pre-wrap;line-height:1.6"></p>
         </div>
       </div>
     </div>
@@ -261,15 +284,21 @@
   <!-- PERFIL -->
   <div id="view-perfil" class="hidden">
     <div class="container narrow">
-      <div class="back-row">
-        <button class="btn-back" onclick="showDashboard()">← Volver</button>
+      <div class="page-header">
+        <button class="btn-back" onclick="showDashboard()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Volver
+        </button>
         <h2>Mi perfil</h2>
       </div>
+
       <div class="card">
         <div class="card-section">
-          <h3>Mis datos (aparecen en las boletas)</h3>
+          <div class="section-title">Mis datos (aparecen en las boletas)</div>
           <div class="form-grid">
-            <div class="form-group" style="grid-column:1/-1">
+            <div class="form-group full">
               <label>Nombre completo</label>
               <input type="text" id="p-nombre" placeholder="Tu nombre">
             </div>
@@ -281,22 +310,22 @@
               <label>Telefono</label>
               <input type="text" id="p-tel" placeholder="+61 ...">
             </div>
-            <div class="form-group" style="grid-column:1/-1">
+            <div class="form-group full">
               <label>Empresa / ABN</label>
               <input type="text" id="p-empresa" placeholder="Nombre empresa o ABN">
             </div>
-            <div class="form-group" style="grid-column:1/-1">
+            <div class="form-group full">
               <label>Direccion</label>
               <input type="text" id="p-direccion" placeholder="Tu direccion">
             </div>
-            <div class="form-group" style="grid-column:1/-1">
+            <div class="form-group full">
               <label>Datos bancarios (para cobro)</label>
               <textarea id="p-banco" rows="2" placeholder="BSB: 000-000  /  Cuenta: 12345678"></textarea>
             </div>
           </div>
         </div>
         <div class="card-section" style="border-bottom:none">
-          <button class="btn btn-primary" onclick="guardarPerfil()">Guardar perfil</button>
+          <button class="btn btn-primary btn-lg" onclick="guardarPerfil()">Guardar perfil</button>
         </div>
       </div>
     </div>
@@ -307,6 +336,7 @@
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
