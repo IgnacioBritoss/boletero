@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
   const { createClient } = require('@supabase/supabase-js')
   const sb = createClient(
     process.env.SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
   const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', boletaId).single()
