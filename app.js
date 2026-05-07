@@ -217,6 +217,7 @@ async function crearBoleta() {
 // ── DETALLE ────────────────────────────────────────────
 async function loadDetalle(id) {
   const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
+  const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!b) return
 
   document.getElementById('d-numero').textContent = b.numero
