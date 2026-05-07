@@ -529,13 +529,29 @@ async function cobrar(id) {
 // ── EMAIL ──────────────────────────────────────────────
 async function enviarEmailBoleta(boletaId, clienteEmail) {
   try {
-    const res = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ boletaId, clienteEmail })
+    const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', boletaId).single()
+    const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
+    if (!b) { toast('Boleta no encontrada', true); return }
+
+    const detalle = b.items_boleta?.map(i =>
+      `${i.descripcion} — ${i.cantidad} x ${fmt(i.precio_unitario, b.moneda)} = ${fmt(i.subtotal, b.moneda)}`
+    ).join('\n') || ''
+
+    emailjs.init('WH4xuL0wMnwo0jllv')
+
+    await emailjs.send('service_vdabye8', 'template_wcafgjn', {
+      to_email: clienteEmail,
+      cliente_nombre: b.cliente_nombre || 'Cliente',
+      numero: b.numero,
+      detalle: detalle,
+      total: fmt(b.total, b.moneda),
+      datos_bancarios: perfil?.datos_bancarios || '',
+      notas: b.notas || '',
     })
-    if (!res.ok) throw new Error()
-  } catch {
+
+    toast('Email enviado')
+  } catch (err) {
+    console.error(err)
     toast('Error al enviar el email', true)
   }
 }
