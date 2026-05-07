@@ -232,7 +232,17 @@ async function loadDetalle(id) {
   }
   if (b.cliente_tel) {
     const tel = b.cliente_tel.replace(/\D/g, '')
-    const texto = encodeURIComponent(`Hi ${b.cliente_nombre || ''}! Please find attached the PDF invoice ${b.numero} for ${fmt(b.total, b.moneda || 'AUD')}. Let me know if you have any questions.`)
+const texto = encodeURIComponent(
+`Hi ${b.cliente_nombre || ''}!
+
+Please find attached invoice ${b.numero} for the work completed.
+
+Amount due: ${fmt(b.total, b.moneda || 'AUD')}${b.cuotas > 1 ? `\n${b.cuotas} instalments of ${fmt(b.total / b.cuotas, b.moneda || 'AUD')}` : ''}
+
+${perfil?.datos_bancarios ? `Bank details:\n${perfil.datos_bancarios}\n` : ''}Please don't hesitate to reach out if you have any questions.
+
+Thank you!`
+)
     actions.innerHTML += `
       <button class="btn" style="background:#25d366;color:white" onclick="
         compartirPDF('${b.id}');
@@ -278,6 +288,7 @@ async function loadDetalle(id) {
 // ── COMPARTIR PDF ──────────────────────────────────────
 async function compartirPDF(id) {
   const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
+  const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!b) return
 
