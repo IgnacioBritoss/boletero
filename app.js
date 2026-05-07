@@ -240,8 +240,7 @@ Please find attached invoice ${b.numero} for the work completed.
 
 Amount due: ${fmt(b.total, b.moneda || 'AUD')}${b.cuotas > 1 ? `\n${b.cuotas} instalments of ${fmt(b.total / b.cuotas, b.moneda || 'AUD')}` : ''}
 
-${perfil?.datos_bancarios ? `Bank details:\n${perfil.datos_bancarios}\n` : ''}Please don't hesitate to reach out if you have any questions.
-
+${perfil?.datos_bancarios ? `Bank details:\n${perfil.datos_bancarios}\n` : ''}Please do not hesitate to reach out if you have any questions.
 Thank you!`
 )
     actions.innerHTML += `
