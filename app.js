@@ -58,9 +58,18 @@ async function loadDashboard() {
   renderBoletas(allBoletas)
 }
 
-function filterBoletas() {
-  const f = document.getElementById('filtro-estado').value
-  renderBoletas(f ? allBoletas.filter(b => b.estado === f) : allBoletas)
+let filtroActual = ''
+const filtroOpciones = ['', 'pendiente', 'cobrada']
+const filtroLabels = { '': 'All', 'pendiente': 'Pending', 'cobrada': 'Paid' }
+const filtroClasses = { '': '', 'pendiente': 'active-pending', 'cobrada': 'active-paid' }
+
+function cycleFilter() {
+  const idx = filtroOpciones.indexOf(filtroActual)
+  filtroActual = filtroOpciones[(idx + 1) % filtroOpciones.length]
+  const btn = document.getElementById('filtro-btn')
+  btn.className = 'filter-toggle ' + filtroClasses[filtroActual]
+  document.getElementById('filtro-label').textContent = filtroLabels[filtroActual]
+  renderBoletas(filtroActual ? allBoletas.filter(b => b.estado === filtroActual) : allBoletas)
 }
 
 function renderBoletas(boletas) {
@@ -84,8 +93,7 @@ function renderBoletas(boletas) {
   tbody.innerHTML = boletas.map(b => `
     <tr onclick="showDetalle('${b.id}')">
       <td><span class="mono" style="color:var(--blue);font-weight:600">${b.numero}</span></td>
-      <td>${b.cliente_nombre || '<span style="color:var(--text3);font-style:italic">No client</span>'}</td>
-      <td style="color:var(--text2)">${fmtFecha(b.fecha)}</td>
+<td class="capitalize">${b.cliente_nombre || '<span style="color:var(--text3);font-style:italic">No client</span>'}</td>      <td style="color:var(--text2)">${fmtFecha(b.fecha)}</td>
       <td style="font-weight:600">${fmt(b.total, b.moneda || 'AUD')}</td>
       <td><span class="badge badge-${b.estado}">${badgeText(b.estado)}</span></td>
       <td style="text-align:right" onclick="event.stopPropagation()">
@@ -248,7 +256,7 @@ Thank you!`
   actions.innerHTML += `<button class="btn btn-ghost" style="color:var(--text3);margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Delete</button>`
 
   document.getElementById('d-cliente').innerHTML = b.cliente_nombre ? `
-    <div class="info-row"><span class="info-label">Name</span><span class="info-value">${b.cliente_nombre}</span></div>
+    <div class="info-row"><span class="info-label">Name</<div class="info-row"><span class="info-label">Name</span><span class="info-value" style="text-transform:capitalize">${b.cliente_nombre}</span></div>span><span class="info-value">${b.cliente_nombre}</span></div>
     ${b.cliente_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-value">${b.cliente_email}</span></div>` : ''}
     ${b.cliente_tel ? `<div class="info-row"><span class="info-label">Phone</span><span class="info-value">${b.cliente_tel}</span></div>` : ''}
   ` : `<p style="color:var(--text3);font-size:14px">No client</p>`
