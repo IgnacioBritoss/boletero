@@ -160,6 +160,12 @@ async function initNuevaForm() {
   document.getElementById('f-cuotas').oninput   = recalc
   document.getElementById('f-descuento').oninput = recalc
   document.getElementById('f-moneda').onchange   = recalc
+  document.getElementById('f-cliente-tel').oninput = function() {
+    let v = this.value.replace(/\D/g, '')
+    if (v.length > 4) v = v.slice(0,4) + ' ' + v.slice(4)
+    if (v.length > 9) v = v.slice(0,9) + ' ' + v.slice(9)
+    this.value = v
+  }
 }
 
 function renderItems() {
