@@ -258,7 +258,8 @@ async function loadDetalle(id) {
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!b) return
 
-document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:8px 18px;font-size:14px;font-weight:600">${b.numero} · ${badgeText(b.estado)}</span>`  const actions = document.getElementById('detalle-actions')
+document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:8px 18px;font-size:14px;font-weight:600">${b.numero} · ${badgeText(b.estado)}</span>`
+  const actions = document.getElementById('detalle-actions')
   actions.innerHTML = ''
   if (b.estado === 'pendiente') {
     actions.innerHTML += `<button class="btn btn-success" onclick="cobrar('${b.id}')">Mark as paid</button>`
