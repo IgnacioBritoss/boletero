@@ -123,14 +123,11 @@ header {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  padding: 0;
+  padding: 13px 16px;
   font-family: inherit;
   transition: background .15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 48px;
+  display: block;
+  text-align: center;
 }
 .btn-paid-row:hover { background: var(--bg3); }
 .btn-delete {
@@ -209,12 +206,12 @@ td {
   border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
-td:last-child { border-right: none; padding: 0; vertical-align: stretch; }tr:last-child td { border-bottom: none; }
-.text-right { text-align: right; }
+td:last-child { border-right: none; padding: 0; }
+tr:last-child td { border-bottom: none; }
 tbody tr td { cursor: pointer; }
 tbody tr:hover td:not(:last-child) { background: var(--bg3); }
-tbody tr td:last-child { background: var(--bg2) !important; cursor: default; }
-tbody tr:hover td:last-child { background: var(--bg2) !important; }
+tbody tr td:last-child { padding: 0; cursor: default; }
+.text-right { text-align: right; }
 .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
 .capitalize { text-transform: capitalize; }
 
