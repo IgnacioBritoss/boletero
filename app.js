@@ -258,9 +258,7 @@ async function loadDetalle(id) {
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!b) return
 
-  document.getElementById('d-numero').textContent = b.numero
-  document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}">${badgeText(b.estado)}</span>`
-
+document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:6px 14px">${b.numero} · ${badgeText(b.estado)}</span>`
   const actions = document.getElementById('detalle-actions')
   actions.innerHTML = ''
   if (b.estado === 'pendiente') {
