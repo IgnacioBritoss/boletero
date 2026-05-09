@@ -24,7 +24,6 @@ initTheme()
 // ── AUTH ──────────────────────────────────────────────
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    
     currentUser = session.user
     document.getElementById('login-screen').classList.add('hidden')
     document.getElementById('app-screen').classList.remove('hidden')
@@ -40,6 +39,35 @@ document.getElementById('btn-google').onclick = () =>
   sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
 
 function signOut() { sb.auth.signOut() }
+
+// ── UTILS ──────────────────────────────────────────────
+function titleCase(str) {
+  if (!str) return ''
+  return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+}
+
+function fmt(n, moneda = 'AUD') {
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency', currency: moneda, minimumFractionDigits: 2
+  }).format(n || 0)
+}
+
+function fmtFecha(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-AU', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  })
+}
+
+function badgeText(e) {
+  return e === 'pendiente' ? 'Pending' : e === 'cobrada' ? 'Paid' : 'Cancelled'
+}
+
+function toast(msg, error = false) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className = error ? 'show error' : 'show'
+  setTimeout(() => t.className = '', 3000)
+}
 
 // ── VIEWS ──────────────────────────────────────────────
 function hideAll() {
@@ -75,7 +103,7 @@ function cycleFilter() {
 function renderBoletas(boletas) {
   let cobrado = 0, pendiente = 0, pendCount = 0
   allBoletas.forEach(b => {
-    if (b.estado === 'cobrada')  cobrado   += b.total
+    if (b.estado === 'cobrada')   cobrado   += b.total
     if (b.estado === 'pendiente') { pendiente += b.total; pendCount++ }
   })
   document.getElementById('stat-cobrado').textContent    = fmt(cobrado, 'AUD')
@@ -93,12 +121,13 @@ function renderBoletas(boletas) {
   tbody.innerHTML = boletas.map(b => `
     <tr onclick="showDetalle('${b.id}')">
       <td><span class="mono" style="color:var(--blue);font-weight:600">${b.numero}</span></td>
-<td class="capitalize">${b.cliente_nombre || '<span style="color:var(--text3);font-style:italic">No client</span>'}</td>      <td style="color:var(--text2)">${fmtFecha(b.fecha)}</td>
+      <td>${b.cliente_nombre ? titleCase(b.cliente_nombre) : '<span style="color:var(--text3);font-style:italic">No client</span>'}</td>
+      <td style="color:var(--text2)">${fmtFecha(b.fecha)}</td>
       <td style="font-weight:600">${fmt(b.total, b.moneda || 'AUD')}</td>
       <td><span class="badge badge-${b.estado}">${badgeText(b.estado)}</span></td>
-      <td style="text-align:right" onclick="event.stopPropagation()">
+      <td onclick="event.stopPropagation()">
         ${b.estado === 'pendiente'
-          ? `<button class="btn btn-success" style="font-size:12px;padding:5px 10px" onclick="cobrar('${b.id}')">Paid</button>`
+          ? `<button class="btn-paid-row" onclick="cobrar('${b.id}')">Mark as paid</button>`
           : ''}
       </td>
     </tr>
@@ -150,8 +179,8 @@ function renderItems() {
   recalc()
 }
 
-function addItem()      { items.push({ descripcion: '', cantidad: 1, precio_unitario: 0 }); renderItems() }
-function removeItem(i)  { items.splice(i, 1); renderItems() }
+function addItem()     { items.push({ descripcion: '', cantidad: 1, precio_unitario: 0 }); renderItems() }
+function removeItem(i) { items.splice(i, 1); renderItems() }
 
 function recalc() {
   const moneda   = document.getElementById('f-moneda')?.value || 'AUD'
@@ -173,14 +202,14 @@ function recalc() {
 }
 
 async function crearBoleta() {
-  const nombre  = document.getElementById('f-cliente-nombre').value.trim()
-  const email   = document.getElementById('f-cliente-email').value.trim()
-  const tel     = document.getElementById('f-cliente-tel').value.trim()
-  const fecha   = document.getElementById('f-fecha').value
-  const cuotas  = +document.getElementById('f-cuotas').value || 1
-  const desc    = +document.getElementById('f-descuento').value || 0
-  const notas   = document.getElementById('f-notas').value
-  const moneda  = document.getElementById('f-moneda').value
+  const nombre   = document.getElementById('f-cliente-nombre').value.trim()
+  const email    = document.getElementById('f-cliente-email').value.trim()
+  const tel      = document.getElementById('f-cliente-tel').value.trim()
+  const fecha    = document.getElementById('f-fecha').value
+  const cuotas   = +document.getElementById('f-cuotas').value || 1
+  const desc     = +document.getElementById('f-descuento').value || 0
+  const notas    = document.getElementById('f-notas').value
+  const moneda   = document.getElementById('f-moneda').value
   const envEmail = document.getElementById('f-enviar-email').checked
 
   const subtotal = items.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0)
@@ -236,16 +265,15 @@ async function loadDetalle(id) {
   }
   if (b.cliente_tel) {
     const tel = b.cliente_tel.replace(/\D/g, '')
-const texto = encodeURIComponent(
-`Hi ${b.cliente_nombre || ''}!
+    const texto = encodeURIComponent(
+`Hi ${titleCase(b.cliente_nombre) || ''}!
 
 Please find attached invoice ${b.numero} for the work completed.
 
 Amount due: ${fmt(b.total, b.moneda || 'AUD')}${b.cuotas > 1 ? `\n${b.cuotas} instalments of ${fmt(b.total / b.cuotas, b.moneda || 'AUD')}` : ''}
 
 ${perfil?.datos_bancarios ? `Bank details:\n${perfil.datos_bancarios}\n` : ''}Please do not hesitate to reach out if you have any questions.
-Thank you!`
-)
+Thank you!`)
     actions.innerHTML += `
       <button class="btn" style="background:#25d366;color:white" onclick="
         compartirPDF('${b.id}');
@@ -253,10 +281,10 @@ Thank you!`
       ">WhatsApp</button>
     `
   }
-  actions.innerHTML += `<button class="btn btn-ghost" style="color:var(--text3);margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Delete</button>`
+  actions.innerHTML += `<button class="btn btn-delete" style="margin-left:auto" onclick="confirmarBorrar('${b.id}','${b.numero}')">Delete</button>`
 
   document.getElementById('d-cliente').innerHTML = b.cliente_nombre ? `
-    <div class="info-row"><span class="info-label">Name</<div class="info-row"><span class="info-label">Name</span><span class="info-value" style="text-transform:capitalize">${b.cliente_nombre}</span></div>span><span class="info-value">${b.cliente_nombre}</span></div>
+    <div class="info-row"><span class="info-label">Name</span><span class="info-value">${titleCase(b.cliente_nombre)}</span></div>
     ${b.cliente_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-value">${b.cliente_email}</span></div>` : ''}
     ${b.cliente_tel ? `<div class="info-row"><span class="info-label">Phone</span><span class="info-value">${b.cliente_tel}</span></div>` : ''}
   ` : `<p style="color:var(--text3);font-size:14px">No client</p>`
@@ -303,6 +331,7 @@ async function compartirPDF(id) {
   const lineGris = [226, 232, 240]
   const W = 210, pad = 20
 
+  // Header — sin badge de estado
   doc.setFillColor(...azul)
   doc.rect(0, 0, W, 42, 'F')
   doc.setTextColor(255, 255, 255)
@@ -313,14 +342,6 @@ async function compartirPDF(id) {
   doc.setFont('helvetica', 'normal')
   doc.text(`Invoice ${b.numero}`, pad, 28)
   doc.text(fmtFecha(b.fecha), pad, 35)
-
-  const estadoColor = b.estado === 'cobrada' ? [21, 128, 61] : [146, 64, 14]
-  doc.setFillColor(...estadoColor)
-  doc.roundedRect(W - pad - 30, 12, 30, 10, 2, 2, 'F')
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(255, 255, 255)
-  doc.text(badgeText(b.estado).toUpperCase(), W - pad - 15, 18.5, { align: 'center' })
 
   let y = 54
   const col2 = W / 2 + 5
@@ -342,7 +363,7 @@ async function compartirPDF(id) {
     doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...gris)
     doc.text('TO', col2, yc); yc += 5
     doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...negro)
-    doc.text(b.cliente_nombre, col2, yc); yc += 5
+    doc.text(titleCase(b.cliente_nombre), col2, yc); yc += 5
     doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...gris)
     if (b.cliente_email) { doc.text(b.cliente_email, col2, yc); yc += 4 }
     if (b.cliente_tel)   { doc.text(b.cliente_tel,   col2, yc); yc += 4 }
@@ -442,15 +463,32 @@ async function enviarEmailBoleta(boletaId, clienteEmail) {
     const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
     if (!b) { toast('Invoice not found', true); return }
 
-    const detalle = b.items_boleta?.map(i =>
-      `${i.descripcion} — ${i.cantidad} x ${fmt(i.precio_unitario, b.moneda)} = ${fmt(i.subtotal, b.moneda)}`
-    ).join('\n') || ''
+    const itemsHtml = b.items_boleta?.map(i => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px">${i.descripcion}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;font-size:14px">${i.cantidad}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px">${fmt(i.precio_unitario, b.moneda)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:600">${fmt(i.subtotal, b.moneda)}</td>
+      </tr>
+    `).join('') || ''
+
+    const detalle = `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:4px">
+      <thead>
+        <tr style="background:#f8f9fa">
+          <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Description</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Qty</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Price</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>`
 
     emailjs.init('WH4xuL0wMnwo0jllv')
 
     await emailjs.send('service_vdabye8', 'template_wcafgjn', {
       to_email: clienteEmail,
-      cliente_nombre: b.cliente_nombre || 'Client',
+      cliente_nombre: titleCase(b.cliente_nombre) || 'Client',
       numero: b.numero,
       detalle: detalle,
       total: fmt(b.total, b.moneda),
@@ -509,11 +547,10 @@ function confirmarBorrar(id, numero) {
   backdrop.innerHTML = `
     <div class="modal">
       <h3>Delete invoice</h3>
-      <p class="modal-body">You are about to delete invoice <strong>${numero}</strong>.</p>
-      <div class="modal-warning">This action cannot be undone.</div>
+      <p class="modal-body">Delete <strong>${numero}</strong>? This cannot be undone.</p>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="cerrarModal()">Cancel</button>
-        <button class="btn btn-danger" onclick="borrarBoleta('${id}')">Delete permanently</button>
+        <button class="btn btn-delete" onclick="borrarBoleta('${id}')">Delete</button>
       </div>
     </div>
   `
@@ -530,28 +567,4 @@ async function borrarBoleta(id) {
   toast('Invoice deleted')
   allBoletas = allBoletas.filter(b => b.id !== id)
   showDashboard()
-}
-
-// ── UTILS ──────────────────────────────────────────────
-function fmt(n, moneda = 'AUD') {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency', currency: moneda, minimumFractionDigits: 2
-  }).format(n || 0)
-}
-
-function fmtFecha(d) {
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-AU', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  })
-}
-
-function badgeText(e) {
-  return e === 'pendiente' ? 'Pending' : e === 'cobrada' ? 'Paid' : 'Cancelled'
-}
-
-function toast(msg, error = false) {
-  const t = document.getElementById('toast')
-  t.textContent = msg
-  t.className = error ? 'show error' : 'show'
-  setTimeout(() => t.className = '', 3000)
 }

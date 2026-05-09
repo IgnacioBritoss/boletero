@@ -355,3 +355,38 @@ textarea { resize: vertical; line-height: 1.5; }
   .form-actions { flex-direction: column; }
   .page-header h2 { font-size: 17px; }
 }
+/* ── PAID ROW BUTTON ── */
+.btn-paid-row {
+  background: none; border: none;
+  color: var(--text3); font-size: 12px; font-weight: 500;
+  cursor: pointer; padding: 5px 10px;
+  border-radius: var(--radius-sm); font-family: inherit;
+  transition: all .15s;
+}
+.btn-paid-row:hover { color: var(--blue); background: var(--blue-light); }
+
+/* ── DELETE BUTTON ── */
+.btn-delete {
+  background: #dc2626; color: white; border: none;
+  border-radius: var(--radius-sm); padding: 7px 14px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: background .15s;
+}
+.btn-delete:hover { background: #b91c1c; }
+
+/* ── HIDE NUMBER ARROWS ── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ── FILTER TOGGLE ── */
+.filter-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 99px; padding: 5px 14px;
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.filter-toggle:hover { border-color: var(--blue); color: var(--blue); }
+.filter-toggle.active-pending { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+.filter-toggle.active-paid { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
