@@ -209,8 +209,10 @@ td {
 td:last-child { border-right: none; padding: 0; }
 tr:last-child td { border-bottom: none; }
 tbody tr td { cursor: pointer; }
-tbody tr:hover td:not(:last-child) { background: var(--bg3); }
-tbody tr td:last-child { padding: 0; cursor: default; }
+tbody tr td { cursor: pointer; }
+tbody tr td:last-child { cursor: default; }
+.btn-paid-row:hover { background: var(--bg3); }
+tbody tr td:last-child { padding: 0; cursor: default; } 
 .text-right { text-align: right; }
 .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
 .capitalize { text-transform: capitalize; }
