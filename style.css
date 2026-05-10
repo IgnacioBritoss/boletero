@@ -248,6 +248,11 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
 
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
 .checkbox-label {
   display: flex; align-items: center; gap: 10px;
   cursor: pointer; font-size: 14px; color: var(--text2);
@@ -349,7 +354,8 @@ input[type=number] { -moz-appearance: textfield; }
   th, td { padding: 10px 12px; }
   .card-section { padding: 16px; }
   .modal { padding: 20px; }
-  .action-bar { gap: 6px; }
+  .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-bar .btn, .action-bar button { justify-content: center; margin-left: 0 !important; }
   .btn-lg { width: 100%; justify-content: center; }
   .form-actions { flex-direction: column; }
   .page-header h2 { font-size: 17px; }
