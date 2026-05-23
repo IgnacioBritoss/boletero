@@ -159,8 +159,7 @@ async function initNuevaForm() {
 function renderItems() {
   document.getElementById('items-container').innerHTML = items.map((item, i) => `
     <div class="item-row">
-      <input type="text" placeholder="Description..." value="${item.descripcion}"
-        oninput="items[${i}].descripcion=this.value">
+<input type="text" placeholder="Description..." value="${item.descripcion.replace(/"/g, '&quot;')}"        oninput="items[${i}].descripcion=this.value">
       <input type="number" value="${item.cantidad}" min="0" step="0.5"
         oninput="items[${i}].cantidad=+this.value;recalc()">
       <input type="number" value="${item.precio_unitario}" min="0" step="0.01"
