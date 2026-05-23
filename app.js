@@ -8,7 +8,6 @@ let currentUser = null
 let allBoletas = []
 let items = []
 
-// ── THEME ──────────────────────────────────────────────
 function initTheme() { setTheme(localStorage.getItem('theme') || 'light') }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t)
@@ -21,7 +20,6 @@ function toggleTheme() {
 }
 initTheme()
 
-// ── AUTH ──────────────────────────────────────────────
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
     currentUser = session.user
@@ -40,7 +38,6 @@ document.getElementById('btn-google').onclick = () =>
 
 function signOut() { sb.auth.signOut() }
 
-// ── UTILS ──────────────────────────────────────────────
 function titleCase(str) {
   if (!str) return ''
   return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -69,7 +66,6 @@ function toast(msg, error = false) {
   setTimeout(() => t.className = '', 3000)
 }
 
-// ── VIEWS ──────────────────────────────────────────────
 function hideAll() {
   ['view-dashboard','view-nueva','view-detalle','view-perfil']
     .forEach(id => document.getElementById(id).classList.add('hidden'))
@@ -79,7 +75,6 @@ function showNueva()     { hideAll(); document.getElementById('view-nueva').clas
 function showDetalle(id) { hideAll(); document.getElementById('view-detalle').classList.remove('hidden'); loadDetalle(id) }
 function showPerfil()    { hideAll(); document.getElementById('view-perfil').classList.remove('hidden'); loadPerfil() }
 
-// ── DASHBOARD ──────────────────────────────────────────
 async function loadDashboard() {
   const { data } = await sb.from('boletas').select('*').order('created_at', { ascending: false })
   allBoletas = data || []
@@ -134,7 +129,6 @@ function renderBoletas(boletas) {
   `).join('')
 }
 
-// ── NUEVA BOLETA ────────────────────────────────────────
 async function initNuevaForm() {
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0]
   document.getElementById('f-cuotas').value = 1
@@ -236,8 +230,7 @@ async function crearBoleta() {
       boleta_id: boleta.id,
       descripcion: i.descripcion,
       cantidad: i.cantidad,
-      precio_unitario: i.precio_unitario,
-      subtotal: i.cantidad * i.precio_unitario
+      precio_unitario: i.precio_unitario
     })))
     if (itemsError) { toast('Error saving items', true); console.error(itemsError); return }
   }
@@ -248,7 +241,6 @@ async function crearBoleta() {
   showDetalle(boleta.id)
 }
 
-// ── DETALLE ────────────────────────────────────────────
 async function loadDetalle(id) {
   const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
@@ -301,7 +293,7 @@ Thank you!`)
       <td>${i.descripcion}</td>
       <td class="text-right">${i.cantidad}</td>
       <td class="text-right">${fmt(i.precio_unitario, b.moneda)}</td>
-      <td class="text-right" style="font-weight:600">${fmt(i.subtotal, b.moneda)}</td>
+      <td class="text-right" style="font-weight:600">${fmt(i.cantidad * i.precio_unitario, b.moneda)}</td>
     </tr>
   `).join('') || ''
 
@@ -316,7 +308,6 @@ Thank you!`)
   if (b.notas) document.getElementById('d-notas').textContent = b.notas
 }
 
-// ── COMPARTIR PDF ──────────────────────────────────────
 async function compartirPDF(id) {
   const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
@@ -390,7 +381,7 @@ async function compartirPDF(id) {
     doc.text(String(item.cantidad), 130, y + 5, { align: 'right' })
     doc.text(fmt(item.precio_unitario, b.moneda), 158, y + 5, { align: 'right' })
     doc.setTextColor(...negro); doc.setFont('helvetica', 'bold')
-    doc.text(fmt(item.subtotal, b.moneda), W - pad - 2, y + 5, { align: 'right' })
+    doc.text(fmt(item.cantidad * item.precio_unitario, b.moneda), W - pad - 2, y + 5, { align: 'right' })
     doc.setFont('helvetica', 'normal'); y += 7
   })
 
@@ -455,7 +446,6 @@ async function compartirPDF(id) {
   toast('PDF downloaded')
 }
 
-// ── EMAIL ──────────────────────────────────────────────
 async function enviarEmailBoleta(boletaId, clienteEmail) {
   try {
     const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', boletaId).single()
@@ -467,7 +457,7 @@ async function enviarEmailBoleta(boletaId, clienteEmail) {
         <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px">${i.descripcion}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;font-size:14px">${i.cantidad}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px">${fmt(i.precio_unitario, b.moneda)}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:600">${fmt(i.subtotal, b.moneda)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:600">${fmt(i.cantidad * i.precio_unitario, b.moneda)}</td>
       </tr>
     `).join('') || ''
 
@@ -502,7 +492,6 @@ async function enviarEmailBoleta(boletaId, clienteEmail) {
   }
 }
 
-// ── PERFIL ─────────────────────────────────────────────
 async function loadPerfil() {
   const { data } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!data) return
@@ -528,7 +517,6 @@ async function guardarPerfil() {
   toast('Profile saved')
 }
 
-// ── COBRAR ─────────────────────────────────────────────
 async function cobrar(id) {
   if (!confirm('Mark this invoice as paid?')) return
   await sb.from('boletas').update({ estado: 'cobrada' }).eq('id', id)
@@ -538,7 +526,6 @@ async function cobrar(id) {
   if (!document.getElementById('view-detalle').classList.contains('hidden')) loadDetalle(id)
 }
 
-// ── BORRAR ─────────────────────────────────────────────
 function confirmarBorrar(id, numero) {
   const backdrop = document.createElement('div')
   backdrop.className = 'modal-backdrop'
