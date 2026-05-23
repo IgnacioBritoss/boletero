@@ -160,7 +160,6 @@ async function initNuevaForm() {
   document.getElementById('f-cuotas').oninput   = recalc
   document.getElementById('f-descuento').oninput = recalc
   document.getElementById('f-moneda').onchange   = recalc
- 
 }
 
 function renderItems() {
@@ -233,12 +232,14 @@ async function crearBoleta() {
 
   const validos = items.filter(i => i.descripcion.trim())
   if (validos.length) {
-    await sb.from('items_boleta').insert(validos.map(i => ({
+    const { error: itemsError } = await sb.from('items_boleta').insert(validos.map(i => ({
       boleta_id: boleta.id,
       descripcion: i.descripcion,
       cantidad: i.cantidad,
-      precio_unitario: i.precio_unitario
+      precio_unitario: i.precio_unitario,
+      subtotal: i.cantidad * i.precio_unitario
     })))
+    if (itemsError) { toast('Error saving items', true); console.error(itemsError); return }
   }
 
   if (envEmail && email) await enviarEmailBoleta(boleta.id, email)
@@ -253,7 +254,7 @@ async function loadDetalle(id) {
   const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
   if (!b) return
 
-document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:8px 18px;font-size:14px;font-weight:600">${b.numero} · ${badgeText(b.estado)}</span>`
+  document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:8px 18px;font-size:14px;font-weight:600">${b.numero} · ${badgeText(b.estado)}</span>`
   const actions = document.getElementById('detalle-actions')
   actions.innerHTML = ''
   if (b.estado === 'pendiente') {
@@ -330,7 +331,6 @@ async function compartirPDF(id) {
   const lineGris = [226, 232, 240]
   const W = 210, pad = 20
 
-  // Header — sin badge de estado
   doc.setFillColor(...azul)
   doc.rect(0, 0, W, 42, 'F')
   doc.setTextColor(255, 255, 255)
