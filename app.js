@@ -1,13 +1,25 @@
-const SUPABASE_URL = 'https://wtoismnhemzkxonlkibe.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0b2lzbW5oZW16a3hvbmxraWJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTE1ODEsImV4cCI6MjA5MzU4NzU4MX0.6MKRi9-M0j6Ysi5EKWSi3O7Vv_nc8Ng9yufwFyGexLs'
-
-const { createClient } = supabase
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// ============================================================
+// El Boletero — frontend
+// Data comes from /api/data (Neon). Auth via Google Identity Services.
+// ============================================================
 
 let currentUser = null
 let allBoletas = []
 let items = []
 
+// ---------- API helper ----------
+async function api(action, payload = {}) {
+  const res = await fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload }),
+  })
+  if (res.status === 401) { showLogin(); throw new Error('unauthorized') }
+  if (!res.ok) throw new Error('api ' + action + ' failed')
+  return res.json()
+}
+
+// ---------- Theme ----------
 function initTheme() { setTheme(localStorage.getItem('theme') || 'light') }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t)
@@ -20,45 +32,95 @@ function toggleTheme() {
 }
 initTheme()
 
-sb.auth.onAuthStateChange(async (event, session) => {
-  if (session?.user) {
-    currentUser = session.user
-    document.getElementById('login-screen').classList.add('hidden')
-    document.getElementById('app-screen').classList.remove('hidden')
-    showDashboard()
-  } else {
-    currentUser = null
-    document.getElementById('login-screen').classList.remove('hidden')
-    document.getElementById('app-screen').classList.add('hidden')
+// ---------- Auth ----------
+function enterApp() {
+  document.getElementById('login-screen').classList.add('hidden')
+  document.getElementById('app-screen').classList.remove('hidden')
+  showDashboard()
+}
+function showLogin() {
+  currentUser = null
+  document.getElementById('login-screen').classList.remove('hidden')
+  document.getElementById('app-screen').classList.add('hidden')
+}
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth?action=me')
+    if (res.ok) { currentUser = await res.json(); enterApp(); return true }
+  } catch (e) { /* ignore */ }
+  showLogin()
+  return false
+}
+
+async function onGoogleCredential(response) {
+  try {
+    const res = await fetch('/api/auth?action=google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential }),
+    })
+    if (res.ok) { currentUser = await res.json(); enterApp() }
+    else if (res.status === 403) toast('This Google account is not authorized', true)
+    else toast('Sign-in error', true)
+  } catch (e) { toast('Sign-in error', true) }
+}
+
+function whenGoogleReady(cb, tries = 0) {
+  if (window.google?.accounts?.id) return cb()
+  if (tries > 50) return
+  setTimeout(() => whenGoogleReady(cb, tries + 1), 100)
+}
+
+async function initGoogleLogin() {
+  let cfg
+  try { cfg = await (await fetch('/api/auth?action=config')).json() } catch { cfg = {} }
+  if (!cfg.clientId) {
+    document.getElementById('login-setup').classList.remove('hidden')
+    return
   }
-})
+  whenGoogleReady(() => {
+    google.accounts.id.initialize({
+      client_id: cfg.clientId,
+      callback: onGoogleCredential,
+    })
+    google.accounts.id.renderButton(
+      document.getElementById('google-btn-container'),
+      { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', width: 300 }
+    )
+  })
+}
 
-document.getElementById('btn-google').onclick = () =>
-  sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+async function signOut() {
+  try { await fetch('/api/auth?action=logout', { method: 'POST' }) } catch {}
+  if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect()
+  showLogin()
+}
 
-function signOut() { sb.auth.signOut() }
+// Boot
+;(async function boot() {
+  const logged = await checkAuth()
+  if (!logged) initGoogleLogin()
+})()
 
+// ---------- Helpers ----------
 function titleCase(str) {
   if (!str) return ''
   return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 }
-
 function fmt(n, moneda = 'AUD') {
   return new Intl.NumberFormat('en-AU', {
-    style: 'currency', currency: moneda, minimumFractionDigits: 2
-  }).format(n || 0)
+    style: 'currency', currency: moneda, minimumFractionDigits: 2,
+  }).format(Number(n) || 0)
 }
-
 function fmtFecha(d) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-AU', {
-    day: '2-digit', month: 'short', year: 'numeric'
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
-
 function badgeText(e) {
   return e === 'pendiente' ? 'Pending' : e === 'cobrada' ? 'Paid' : 'Cancelled'
 }
-
 function toast(msg, error = false) {
   const t = document.getElementById('toast')
   t.textContent = msg
@@ -66,8 +128,9 @@ function toast(msg, error = false) {
   setTimeout(() => t.className = '', 3000)
 }
 
+// ---------- Navigation ----------
 function hideAll() {
-  ['view-dashboard','view-nueva','view-detalle','view-perfil']
+  ['view-dashboard', 'view-nueva', 'view-detalle', 'view-perfil']
     .forEach(id => document.getElementById(id).classList.add('hidden'))
 }
 function showDashboard() { hideAll(); document.getElementById('view-dashboard').classList.remove('hidden'); loadDashboard() }
@@ -75,9 +138,9 @@ function showNueva()     { hideAll(); document.getElementById('view-nueva').clas
 function showDetalle(id) { hideAll(); document.getElementById('view-detalle').classList.remove('hidden'); loadDetalle(id) }
 function showPerfil()    { hideAll(); document.getElementById('view-perfil').classList.remove('hidden'); loadPerfil() }
 
+// ---------- Dashboard ----------
 async function loadDashboard() {
-  const { data } = await sb.from('boletas').select('*').order('created_at', { ascending: false })
-  allBoletas = data || []
+  try { allBoletas = await api('list') || [] } catch { allBoletas = [] }
   renderBoletas(allBoletas)
 }
 
@@ -98,8 +161,8 @@ function cycleFilter() {
 function renderBoletas(boletas) {
   let cobrado = 0, pendiente = 0, pendCount = 0
   allBoletas.forEach(b => {
-    if (b.estado === 'cobrada')   cobrado   += b.total
-    if (b.estado === 'pendiente') { pendiente += b.total; pendCount++ }
+    if (b.estado === 'cobrada')   cobrado   += Number(b.total) || 0
+    if (b.estado === 'pendiente') { pendiente += Number(b.total) || 0; pendCount++ }
   })
   document.getElementById('stat-cobrado').textContent    = fmt(cobrado, 'AUD')
   document.getElementById('stat-pendiente').textContent  = fmt(pendiente, 'AUD')
@@ -129,6 +192,7 @@ function renderBoletas(boletas) {
   `).join('')
 }
 
+// ---------- New invoice ----------
 async function initNuevaForm() {
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0]
   document.getElementById('f-cuotas').value = 1
@@ -144,14 +208,14 @@ async function initNuevaForm() {
   const nombres = [...new Set(allBoletas.filter(b => b.cliente_nombre).map(b => b.cliente_nombre))]
   document.getElementById('clientes-list').innerHTML = nombres.map(n => `<option value="${n}">`).join('')
 
-  document.getElementById('f-cliente-nombre').oninput = function() {
+  document.getElementById('f-cliente-nombre').oninput = function () {
     const match = allBoletas.find(b => b.cliente_nombre === this.value)
     if (match) {
       if (match.cliente_email) document.getElementById('f-cliente-email').value = match.cliente_email
       if (match.cliente_tel)   document.getElementById('f-cliente-tel').value   = match.cliente_tel
     }
   }
-  document.getElementById('f-cuotas').oninput   = recalc
+  document.getElementById('f-cuotas').oninput    = recalc
   document.getElementById('f-descuento').oninput = recalc
   document.getElementById('f-moneda').onchange   = recalc
 }
@@ -159,11 +223,9 @@ async function initNuevaForm() {
 function renderItems() {
   document.getElementById('items-container').innerHTML = items.map((item, i) => `
     <div class="item-row">
-<input type="text" placeholder="Description..." value="${item.descripcion.replace(/"/g, '&quot;')}"        oninput="items[${i}].descripcion=this.value">
-      <input type="number" value="${item.cantidad}" min="0" step="0.5"
-        oninput="items[${i}].cantidad=+this.value;recalc()">
-      <input type="number" value="${item.precio_unitario}" min="0" step="0.01"
-        oninput="items[${i}].precio_unitario=+this.value;recalc()">
+      <input type="text" placeholder="Description..." value="${item.descripcion.replace(/"/g, '&quot;')}" oninput="items[${i}].descripcion=this.value">
+      <input type="number" value="${item.cantidad}" min="0" step="0.5" oninput="items[${i}].cantidad=+this.value;recalc()">
+      <input type="number" value="${item.precio_unitario}" min="0" step="0.01" oninput="items[${i}].precio_unitario=+this.value;recalc()">
       ${items.length > 1
         ? `<button class="btn-remove" onclick="removeItem(${i})">&#x2715;</button>`
         : '<span></span>'}
@@ -208,41 +270,33 @@ async function crearBoleta() {
   const subtotal = items.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0)
   const total    = subtotal - desc
 
-  const anio = new Date().getFullYear()
-  const { count } = await sb.from('boletas').select('*', { count: 'exact', head: true })
-  const numero = `INV-${anio}-${String((count || 0) + 1).padStart(3, '0')}`
+  let created
+  try {
+    created = await api('create', {
+      boleta: {
+        fecha, cuotas, subtotal, descuento: desc, total,
+        cliente_nombre: nombre || null,
+        cliente_email:  email  || null,
+        cliente_tel:    tel    || null,
+        moneda, notas: notas || null,
+      },
+      items: items.filter(i => i.descripcion.trim()),
+    })
+  } catch (e) { toast('Error creating invoice', true); return }
 
-  const { data: boleta, error } = await sb.from('boletas').insert({
-    user_id: currentUser.id, numero, fecha, cuotas, subtotal,
-    descuento: desc, total,
-    cliente_nombre: nombre || null,
-    cliente_email:  email  || null,
-    cliente_tel:    tel    || null,
-    moneda, notas: notas || null, estado: 'pendiente'
-  }).select().single()
+  if (!created || !created.id) { toast('Error creating invoice', true); return }
 
-  if (error || !boleta) { toast('Error creating invoice', true); return }
-
-  const validos = items.filter(i => i.descripcion.trim())
-  if (validos.length) {
-    const { error: itemsError } = await sb.from('items_boleta').insert(validos.map(i => ({
-      boleta_id: boleta.id,
-      descripcion: i.descripcion,
-      cantidad: i.cantidad,
-      precio_unitario: i.precio_unitario
-    })))
-    if (itemsError) { toast('Error saving items', true); console.error(itemsError); return }
-  }
-
-  if (envEmail && email) await enviarEmailBoleta(boleta.id, email)
+  if (envEmail && email) await enviarEmailBoleta(created.id, email)
 
   toast('Invoice created')
-  showDetalle(boleta.id)
+  showDetalle(created.id)
 }
 
+// ---------- Invoice detail ----------
 async function loadDetalle(id) {
-  const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
-  const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
+  let data
+  try { data = await api('get', { id }) } catch { return }
+  const b = data.boleta, perfil = data.perfil
   if (!b) return
 
   document.getElementById('d-badge').innerHTML = `<span class="badge badge-${b.estado}" style="padding:8px 18px;font-size:14px;font-weight:600">${b.numero} · ${badgeText(b.estado)}</span>`
@@ -266,7 +320,7 @@ Amount due: ${fmt(b.total, b.moneda || 'AUD')}${b.cuotas > 1 ? `\n${b.cuotas} in
 ${perfil?.datos_bancarios ? `Bank details:\n${perfil.datos_bancarios}\n` : ''}Please do not hesitate to reach out if you have any questions.
 Thank you!`)
     actions.innerHTML += `
-      <button class="btn" style="background:#25d366;color:white" onclick="
+      <button class="btn btn-whatsapp" onclick="
         compartirPDF('${b.id}');
         setTimeout(() => window.open('https://wa.me/${tel}?text=${texto}', '_blank'), 1500)
       ">WhatsApp</button>
@@ -287,7 +341,7 @@ Thank you!`)
     ${b.cuotas > 1 ? `<div class="info-row"><span class="info-label">Per instalment</span><span class="info-value">${fmt(b.total / b.cuotas, b.moneda)}</span></div>` : ''}
   `
 
-  document.getElementById('d-items').innerHTML = b.items_boleta?.map(i => `
+  document.getElementById('d-items').innerHTML = b.items?.map(i => `
     <tr>
       <td>${i.descripcion}</td>
       <td class="text-right">${i.cantidad}</td>
@@ -307,9 +361,11 @@ Thank you!`)
   if (b.notas) document.getElementById('d-notas').textContent = b.notas
 }
 
+// ---------- PDF ----------
 async function compartirPDF(id) {
-  const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', id).single()
-  const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
+  let data
+  try { data = await api('get', { id }) } catch { return }
+  const b = data.boleta, perfil = data.perfil
   if (!b) return
 
   const { jsPDF } = window.jspdf
@@ -373,7 +429,7 @@ async function compartirPDF(id) {
   y += 8
 
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
-  b.items_boleta?.forEach((item, idx) => {
+  b.items?.forEach((item, idx) => {
     if (idx % 2 === 0) { doc.setFillColor(252, 252, 253); doc.rect(pad, y, W - pad * 2, 7, 'F') }
     doc.setTextColor(...negro); doc.text(item.descripcion, pad + 2, y + 5)
     doc.setTextColor(...gris)
@@ -445,13 +501,14 @@ async function compartirPDF(id) {
   toast('PDF downloaded')
 }
 
+// ---------- Email (EmailJS, client-side) ----------
 async function enviarEmailBoleta(boletaId, clienteEmail) {
   try {
-    const { data: b } = await sb.from('boletas').select('*, items_boleta(*)').eq('id', boletaId).single()
-    const { data: perfil } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
+    const data = await api('get', { id: boletaId })
+    const b = data.boleta, perfil = data.perfil
     if (!b) { toast('Invoice not found', true); return }
 
-    const itemsHtml = b.items_boleta?.map(i => `
+    const itemsHtml = b.items?.map(i => `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px">${i.descripcion}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;font-size:14px">${i.cantidad}</td>
@@ -491,8 +548,10 @@ async function enviarEmailBoleta(boletaId, clienteEmail) {
   }
 }
 
+// ---------- Profile ----------
 async function loadPerfil() {
-  const { data } = await sb.from('perfil').select('*').eq('id', 1).maybeSingle()
+  let data
+  try { data = await api('perfil-get') } catch { return }
   if (!data) return
   document.getElementById('p-nombre').value    = data.nombre || ''
   document.getElementById('p-email').value     = data.email || ''
@@ -503,22 +562,25 @@ async function loadPerfil() {
 }
 
 async function guardarPerfil() {
-  const { error } = await sb.from('perfil').upsert({
-    id: 1,
-    nombre:          document.getElementById('p-nombre').value,
-    email:           document.getElementById('p-email').value,
-    telefono:        document.getElementById('p-tel').value,
-    empresa:         document.getElementById('p-empresa').value,
-    direccion:       document.getElementById('p-direccion').value,
-    datos_bancarios: document.getElementById('p-banco').value,
-  })
-  if (error) { toast('Error saving', true); return }
-  toast('Profile saved')
+  try {
+    await api('perfil-save', {
+      perfil: {
+        nombre:          document.getElementById('p-nombre').value,
+        email:           document.getElementById('p-email').value,
+        telefono:        document.getElementById('p-tel').value,
+        empresa:         document.getElementById('p-empresa').value,
+        direccion:       document.getElementById('p-direccion').value,
+        datos_bancarios: document.getElementById('p-banco').value,
+      },
+    })
+    toast('Profile saved')
+  } catch (e) { toast('Error saving', true) }
 }
 
+// ---------- Actions ----------
 async function cobrar(id) {
   if (!confirm('Mark this invoice as paid?')) return
-  await sb.from('boletas').update({ estado: 'cobrada' }).eq('id', id)
+  try { await api('pay', { id }) } catch { toast('Error', true); return }
   toast('Invoice marked as paid')
   allBoletas = allBoletas.map(b => b.id === id ? { ...b, estado: 'cobrada' } : b)
   renderBoletas(allBoletas)
@@ -546,8 +608,7 @@ function confirmarBorrar(id, numero) {
 function cerrarModal() { document.getElementById('modal-borrar')?.remove() }
 
 async function borrarBoleta(id) {
-  await sb.from('items_boleta').delete().eq('boleta_id', id)
-  await sb.from('boletas').delete().eq('id', id)
+  try { await api('delete', { id }) } catch { toast('Error', true); return }
   cerrarModal()
   toast('Invoice deleted')
   allBoletas = allBoletas.filter(b => b.id !== id)

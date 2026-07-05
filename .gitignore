@@ -1,3 +1,7 @@
 FreeWheel/
 /editordevideo
 mundial/
+node_modules/
+.vercel
+.env
+.env.local
